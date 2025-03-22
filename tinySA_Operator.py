@@ -1,11 +1,8 @@
-import re
-import json
 import serial
 import time
 from typing import Dict, Any, Optional, List, Union
 import base64
 import os  # Added for connection management in capture_image
-import httpx
 from mcp.server.fastmcp import FastMCP, Image
 import mcp.types as types
 import struct
@@ -13,11 +10,6 @@ import numpy as np
 import datetime
 from PIL import Image as PILImage
 import io
-# from mcp.types import (
-#     ErrorCode,
-#     McpError,
-# )
-
 
 class TinySASerial:
     """Class to handle serial communication with TinySA device."""
@@ -239,26 +231,27 @@ async def get_device_info(port: str) -> Dict[str, Any]:
         }
     finally:
         tinySA.disconnect()
-
-
 @mcp.tool()
-async def capture_image(port: str, save_path: Optional[str] = None, use_timestamp: bool = False) -> List[types.ImageContent]:
+async def capture_image(port: str, save_name: Optional[str] = None, use_timestamp: bool = False) -> List[Union[types.ImageContent, types.TextContent]]:
     """
     Capture the TinySA screen image from the device and return it as an MCP Image.
     
     The function always returns the captured image as an MCP Image object.
-    Additionally, it can save the image to a file if save_path is provided.
+    Additionally, it can save the image to a file if save_name is provided.
     
     Args:
         port: Serial port to connect to (explicitly required if not already set)
-        save_path: Optional file path to save the captured image.
+        save_name: Optional file path to save the captured image.
                    If None (default), the image is not saved to a file.
-                   If provided, the image is saved to the specified path.
+                   If provided, the image is saved to the specified file name.
         use_timestamp: Controls whether to add a timestamp to the filename.
                        Only applicable when save_path is provided.
     """
     if not port and not tinySA.port:
         raise Exception("Port parameter is required.")
+    
+    response = []  # レスポンスの初期化を try ブロックの外に移動
+    
     try:
         if not tinySA.connect(port):
             raise Exception(f"Failed to connect to TinySA on port {port}.")
@@ -284,32 +277,49 @@ async def capture_image(port: str, save_path: Optional[str] = None, use_timestam
         fixed_arr = 0xFF000000 + ((fixed_arr & 0xF800) >> 8) + ((fixed_arr & 0x07EF) << 8) + ((fixed_arr & 0x001F) << 19)
         im = PILImage.frombuffer('RGBA', (480, 320), fixed_arr, 'raw', 'RGBA', 0, 1)
         
-        
         # Save image to file if a path is specified
-        if save_path:
+        if save_name:
             if use_timestamp:
                 timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-                path_parts = os.path.splitext(save_path)
-                save_path = f"{path_parts[0]}_{timestamp}{path_parts[1]}"
-            directory = os.path.dirname(os.path.abspath(save_path))
-            if directory:
-                os.makedirs(directory, exist_ok=True)
+                path_parts = os.path.splitext(save_name)
+                save_name = f"{path_parts[0]}_{timestamp}{path_parts[1]}"
+
+            # Create 'img' directory in the current directory
+            img_directory = os.path.join(os.getcwd(), 'img')
+            os.makedirs(img_directory, exist_ok=True)
+
+            # Update save_name to be within the img directory
+            filename = os.path.basename(save_name)
+            save_path = os.path.join(img_directory, filename)  # save_path として新しい変数を使用
+
             im.save(save_path)
             print(f"Image saved to {save_path}")
+            saved_filename = os.path.basename(save_path)  # 保存された実際のファイル名
         
         buf = io.BytesIO()
         im.save(buf, format='PNG')
         b64_image = base64.b64encode(buf.getvalue()).decode('utf-8')
         
-        return [
+        # 画像データをレスポンスに追加
+        response.append(
             types.ImageContent(
                 type="image", data=b64_image, mimeType="image/png"
             )
-        ]
+        )
+
+        # ファイルが保存された場合は、ファイル名情報も追加
+        if save_name:
+            response.append(
+                types.TextContent(
+                    type="text", text=f"Image saved as: {saved_filename}"
+                )
+            )
     except Exception as e:
         raise Exception(f"Error capturing image: {e}")
     finally:
         tinySA.disconnect()
+    
+    return response  # try ブロックの外で return を追加
 
 
 
