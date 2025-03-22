@@ -1,0 +1,13 @@
+{
+    "mcpServers": {
+        "tinySA Operator": {
+            "command": "uv",
+            "args": [
+                "--directory",
+                "d:\\yoshitaka\\AI\\MCPs\\tinySA_mcp",
+                "run",
+                "tinySA_Operator.py"
+            ]
+        }
+    }
+}

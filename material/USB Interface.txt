@@ -1,0 +1,201 @@
+USB Interface
+After connecting the tinySA to a PC using the a USB cable a serial interface will become available on the PC. Drivers for the serial interface over USB will be automatically installed on Windows and are already builtin in most Linux kernels The serial interface supports a large set of commands. You can always use the help command to get a list of the available commands
+
+There is limited error checking against incorrect parameters of incorrect mode
+
+Frequencies can be specified using an integer optionally postfixed with a the letter 'k' for kilo 'M' for Mega or 'G' for Giga. E.g. 0.1M (100kHz), 500k (0.5MHz) or 12000000 (12MHz)
+Levels are specified in dB(m) and can be specified using a floating point notation. E.g. 10 or 2.5
+Time is specified in seconds optionally postfixed with the letters 'm' for mili or 'u' for micro. E.g. 1 (1 second), 2.5 (2.5 seconds), 120m (120 milliseconds)
+Commands:
+
+attenuate
+  sets the internal attenuation to automatic or a specific value
+  usage: attenuate [auto|0-31]
+  Example: attenuate auto or attenuate 10
+bulk
+  send by tinySA when in auto refresh mode
+  format: "bulk\r\n{X}{Y}{Width}{Height}{Pixeldata}\r\n"
+  where all numbers are binary coded 2 bytes little endian. The Pixeldata is encoded as 2 bytes per pixel
+calc
+  sets or cancels one of the measurement modes
+  this set trace mode minimum hold,max hold average
+  usage: calc off|minh|maxh|maxd|aver4|aver16|quasip
+  Example: calc off or calc minh
+  the commands are the same as those listed in the MEASURE menu
+caloutput
+  disables or sets the caloutput to a specified frequency in MHz
+  usage: caloutput off|30|15|10|4|3|2|1
+  Example: caloutput off or caloutput 30
+capture
+  requests a screen dump to be send in binary format of 320x240 pixels of each 2 bytes
+clearconfig
+  resets the configuration data to factory defaults
+  usage: clearconfig 1234
+color
+  sets or dumps the colors used
+  usage: color [{id} {rgb24}]
+correction
+  sets or dumps the frequency level correction table
+  usage: correction [0..9 {frequency} {level}]
+dac
+  sets or dumps the dac value
+  usage: dac [0..4095]
+data
+  dumps the trace data
+  usage: data 0..2
+  0=temp value, 1=stored trace, 2=measurement
+deviceid
+  sets of dumps a user settable number that can be use to identify a specific tinySA
+  usage: deviceid [{number}]
+fill
+  send by tinySA when in auto refresh mode
+  format: "fill\r\n{X}{Y}{Width}{Height}{Color}\r\n"
+  where all numbers are binary coded 2 bytes little endian.
+freq
+  pauses the sweep and sets the measurement frequency
+  usage: freq {frequency}
+  Example: freq 500k
+frequencies
+  dumps the frequencies used by the last sweep
+  usage: frequencies
+if
+  sets the IF to automatic or a specific value
+  usage: if ( 0 | 433M..435M )
+  where 0 means automatic
+info
+  displays various SW and HW information
+  help
+  dumps a list of the available commands
+  usage: help
+hop (Ultra only)
+  measures the input level at each of the requested frequencies
+  usage: hop {start(Hz)} {stop(Hz)} {step(Hz) | points} [outmask]
+  If the 3rd parameter is below 450 it is assumed to be points, otherwise as step frequency
+  Outmask selects if the frequency (1) or level (2) is output.
+level
+  sets the output level
+  usage: level -76..13
+  Example: level -20
+  Not all values in the range are available
+levelchange
+  sets the output level delta for low output mode level sweep
+  usage: levelchange -70..+70
+leveloffset
+  sets or dumps the level calibration data
+  usage: leveloffset low|high|switch [output] {error}
+  For the output corrections first ensure correct output levels at maximum output level. For the low output set the output to -50dBm and measure and correct the level with "leveloffset switch error" where
+  For all output leveloffset commands measure the level with the leveloffset to zero and calculate
+  error = measured level - specified level
+load
+  loads a previously stored preset
+  usage: load 0..4
+  where 0 is the startup preset
+marker
+  sets or dumps marker info
+  usage: marker {id} on|off|peak|{freq}|{index}
+  where id=1..4 index=0..num_points-1
+  Merker levels will use the selected unit
+  Marker peak will activate the marker (if not done already), position the marker on the strongest signal and display the marker info
+  The frequency must be within the selected sweep range
+  Example: marker 1 on
+           marker 1 peak
+mode
+  sets the mode of the tinySA
+  usage: mode low|high input|output
+  Example: mode low output
+modulation
+  sets the modulation in output mode
+  usage: modulation off|AM_1kHz|AM_10Hz|NFM|WFM|extern
+ext_gain
+  sets the external attenuation/amplification
+  usage: ext_gain -100..100
+  Works in both input and output mode
+output
+  sets the output on or off
+  usage: output on|off
+  Example: output on
+pause
+  pauses the sweeping in either input or output mode
+  usage: pause
+  Example: pause
+rbw
+  sets the rbw to either automatic or a specific value
+  usage: rbw auto|3..600
+  the number specifies the target rbw in kHz
+recall
+  same as load
+refresh
+  enables/disables the auto refresh mode
+  Usage refresh on|off
+release
+  signals a removal of the touch
+  usage: release
+reset
+  resets the tinySA
+  usage: reset
+  Example: reset
+resume
+  resumes the sweeping in either input or output mode
+  usage: resume
+  Example: resume
+save
+  saves the current setting to a preset
+  usage: save 0..4
+  Example: save 2
+  where 0 is the startup preset
+saveconfig
+  saves the device configuration data
+  usage: saveconfig
+scan
+  performs a scan and optionally outputs the measured data
+  usage: scan {start(Hz)} {stop(Hz)} [points] [outmask]
+  Example: scan 1M 2M 100 1
+  where the outmask is a binary OR of 1=frequencies, 2=measured data, 4=stored data and points is maximum 290
+scanraw
+  performs a scan of unlimited amount of points and send the data in binary form
+  usage: scanraw {start(Hz)} {stop(Hz)} [points]
+  The measured data is the level in dBm and is send as '{' ('x' MSB LSB)*points '}'. To get the dBm level from the 16 bit data, divide by 32 and subtract 128.
+selftest
+  performs one or all selftests
+  usage: selftest 0 0..9
+spur
+  enables or disables spur reduction
+  usage: spur on|off
+sweep
+  set sweep boundaries or execute a sweep
+  usage: sweep [ ( start|stop|center|span|cw {frequency} ) | ( {start(Hz)} {stop(Hz)} [0..290] ) ]
+  Example: sweep start 1M or sweep stop 2M
+  sweep without arguments lists the current sweep settings, the frequencies specified should be within the permissible range. The sweep commands apply both to input and output modes
+sweeptime
+  sets the sweeptime
+  usage: sweeptime {time(Seconds)}the time specified may end in a letter where m=mili and u=micro
+  Example: sweeptime 1m
+threads
+  lists information of the threads in the tinySA
+touch
+  sends the coordinates of a touchusage: touch {X coordinate} {Y coordinate}
+  The upper left corner of the screen is "0 0"
+touchcal
+  starts the touch calibration
+touchtest
+  starts the touch test
+trace
+  displays all or one trace information or sets trace related information
+  usage: trace [ {0..2} | dBm|dBmV|dBuV|V|W |store|clear|subtract | (scale|reflevel) auto|{level}
+trigger
+  sets the trigger type or level
+  usage: trigger auto|normal|single|{level(dBm)}
+  Example: trigger auto or trigger -10
+  the trigger level is always set in dBm
+vbat
+  displays the battery voltage
+vbat_offset
+  displays or sets the battery offset value
+  usage: vbat_offset [{0..4095}]
+version
+  displays the version text. The response include two kinds of version.
+  Example: version
+  Example response:
+            tinySA4_v1.4-89-gfff9bed
+            HW Version:V0.4.5.1
+          
